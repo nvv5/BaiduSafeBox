@@ -1,0 +1,10 @@
+/.vscode
+/baidusbox.py
+/bd_logid.py
+/mobilephone.py
+/server.py
+/test.py
+/test_bd_unsbox.py
+/test_pcs_api.py
+/userinfo.py
+/__pycache__
