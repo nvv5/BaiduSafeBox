@@ -1,18 +1,10 @@
+import hashlib
 from baidupcs_py.baidupcs import BaiduPCSApi
-from bd_unlocksbox import BaiduSafeBox
+from baidupcs_py.baidupcs.inner import (CloudTask, FromTo, PcsAuth, PcsFile,
+                                        PcsMagnetFile, PcsQuota, PcsSharedLink,
+                                        PcsSharedPath, PcsUser, PcsUserProduct)
 from baidupcs_py.commands.display import display_files
-from baidupcs_py.baidupcs.inner import (
-    PcsFile,
-    PcsMagnetFile,
-    PcsSharedLink,
-    PcsSharedPath,
-    FromTo,
-    PcsAuth,
-    PcsUserProduct,
-    PcsUser,
-    PcsQuota,
-    CloudTask,
-)
+from bd_unlocksbox import BaiduSafeBox
 
 
 def list_sbox(remotepath: str,
@@ -27,7 +19,7 @@ def list_sbox(remotepath: str,
         'Connection': 'Keep-Alive',
         'Accept-Encoding': 'gzip',
     }
-    _bdstoken = api.bdstoken()
+    _bdstoken = bdstoken
     url = 'https://pan.baidu.com/api/list'
     if desc == 'desc':
         desc_order = '1'
@@ -57,24 +49,31 @@ def list_sbox(remotepath: str,
     resp = api._baidupcs._request_get(url, params=params, headers=headers)
     return resp.json()
 
-#填写bduss和stoken
-cookies = {
-    'BDUSS': '',
-    'STOKEN': '',
-}
-pwd = ''  # 二级密码
 
+cookies = {'BDUSS': ''}
+pwd = ''
+bdstoken = hashlib.md5(cookies['BDUSS'].encode()).hexdigest().lower()
 api = BaiduPCSApi(cookies=cookies)
 bd = BaiduSafeBox(cookies, pwd)
 sboxtkn = bd.unlockbox()
-# print(sboxtkn)
-api._baidupcs._cookies_update({'SBOXTKN': sboxtkn})
-# print(api.cookies)
-remotepath = '/_pcs_.safebox/'
-info = list_sbox(remotepath, time=True)
-# print(info)
-pcs_files = [PcsFile.from_(v) for v in info.get("list", [])]
+print(sboxtkn)
+if sboxtkn is None:
+    print('获取SBOXTKN失败')
+else:
+    api._baidupcs._cookies_update({'SBOXTKN': sboxtkn})
+    print(api.cookies)
+    remotepath = '/_pcs_.safebox/'
+    info = list_sbox(remotepath, time=True)
+
+    if info['errno'] == 0:
+        print(info)
+        pcs_files = [PcsFile.from_(v) for v in info.get("list", [])]
+        display_files(pcs_files, remotepath)
+    if info['errno'] == -9:
+        print('目录不存在')
+    elif info['errno'] == 27:
+        print('缺少SBOXTKN值或SBOXTKN过期')
+    else:
+        print(info)
 # pcs接口没有权限访问隐藏空间
 # print(api.list(remotepath='/_pcs_.safebox'))
-
-display_files(pcs_files, remotepath)
