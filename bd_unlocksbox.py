@@ -38,6 +38,7 @@ class BaiduSafeBox():
                 sboxtkn = response.cookies['SBOXTKN']
             elif res['errno'] == 26:
                 print('二级密码错误')
+                sboxtkn = None
             else:
                 print(res)
                 sboxtkn = None
@@ -46,6 +47,7 @@ class BaiduSafeBox():
             sboxtkn = response.cookies['SBOXTKN']
         elif res['errno'] == 26:
             print('二级密码错误')
+            sboxtkn = None
         else:
             print(res)
             sboxtkn = None
