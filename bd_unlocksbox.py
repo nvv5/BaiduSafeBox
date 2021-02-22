@@ -4,63 +4,56 @@ from skimage import io
 
 
 class BaiduSafeBox():
-    def __init__(self,cookies,pwd):
+    def __init__(self, cookies, pwd):
         self.cookies = cookies
-        self.pwd=pwd
+        self.pwd = pwd
         if cookies and cookies.get("BDUSS", ""):
             self.bduss = cookies["BDUSS"]
         if cookies and cookies.get("STOKEN", ""):
             self.stoken = cookies["STOKEN"]
         self.bdstoken = hashlib.md5(self.bduss.encode()).hexdigest().lower()
         self.headers = {
-            'Connection': 'keep-alive',
-            'Accept': 'application/json, text/javascript, */*; q=0.01',
-            'DNT': '1',
-            'X-Requested-With': 'XMLHttpRequest',
-            'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.0.4324.182 Safari/537.36',
-            'Content-Type': 'application/x-www-form-urlencoded; charset=UTF-8',
-            'Referer': 'https://pan.baidu.com/disk/home?_at_=1613750417379',
-            'Accept-Language': 'zh-CN,zh;q=0.9',
+            'User-Agent': 'netdisk;11.6.3;',
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'Connection': 'Keep-Alive',
+            'Accept-Encoding': 'gzip',
         }
 
     def unlockbox(self):
-        params = (
-            ('channel', 'chunlei'),
-            ('web', '1'),
-            ('app_id', '250528'),
-            ('bdstoken', self.bdstoken),
-        )
-
         data = {
             'passwd': self.pwd,
             'type': '0',  # 1是我的卡包  0是隐藏空间
             'bdstoken': self.bdstoken
         }
-        response = self.login_safebox(params, data)
+        response = self.login_safebox(data)
         res = response.json()
         if res['errno'] == -20:
             yzm, vcode_str = self.getcaptcha()
             data['vcode_input'] = yzm
             data['vcode_str'] = vcode_str
-            response = self.login_safebox(params, data)
+            response = self.login_safebox(data)
             res = response.json()
             if res['errno'] == 0:
                 print('登录成功')
-                sboxtkn=response.cookies['SBOXTKN']
+                sboxtkn = response.cookies['SBOXTKN']
+            elif res['errno'] == 26:
+                print('二级密码错误')
             else:
                 print(res)
-                sboxtkn=None
+                sboxtkn = None
         elif res['errno'] == 0:
             print('登录成功')
-            sboxtkn=response.cookies['SBOXTKN']
+            sboxtkn = response.cookies['SBOXTKN']
+        elif res['errno'] == 26:
+            print('二级密码错误')
         else:
             print(res)
-            sboxtkn=None
+            sboxtkn = None
         return sboxtkn
 
-    def login_safebox(self, params, data):
+    def login_safebox(self,  data):
         response = requests.post('https://pan.baidu.com/sbox/auth/unlockbox',
-                                 headers=self.headers, params=params, cookies=self.cookies, data=data)
+                                 headers=self.headers, cookies=self.cookies, data=data)
         return response
 
     def getcaptcha(self):
@@ -91,11 +84,9 @@ class BaiduSafeBox():
 
 
 if __name__ == '__main__':
-    cookies = {
-    'BDUSS': '',
-    'STOKEN': '',
-    }
-    pwd=''  #二级密码
-    bd = BaiduSafeBox(cookies,pwd)
-    sboxtkn=bd.unlockbox()
+    # cookies = {'BDUSS': '','STOKEN': '',}
+    cookies = {'BDUSS': ''}
+    pwd = ''  # 二级密码
+    bd = BaiduSafeBox(cookies, pwd)
+    sboxtkn = bd.unlockbox()
     print(sboxtkn)
